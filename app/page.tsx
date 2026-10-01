@@ -1,67 +1,72 @@
-'use client';
-import { useEffect, useState } from 'react';
+'use client'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 type Message = {
-  id: number;
-  name: string;
-  content: string;
-  created_at: string;
-};
+  id: number
+  username: string
+  content: string
+  created_at: string
+}
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [name, setName] = useState("");
-  const [content, setContent] = useState("");
+  const [username, setUsername] = useState('')
+  const [content, setContent] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
 
-  const loadMessages = async () => {
-    const res = await fetch("/api/message");
-    const data = await res.json();
-    setMessages(data);
-  };
+  const fetchMessages = async () => {
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .order('id', { ascending: false })
+    setMessages(data ?? [])
+  }
 
   useEffect(() => {
-    loadMessages();
-  }, []);
+    fetchMessages()
+  }, [])
 
-  const submit = async () => {
-    await fetch("/api/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, content })
-    });
-    setName("");
-    setContent("");
-    loadMessages();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!username.trim() || !content.trim()) return
+
+    await supabase.from('messages').insert({
+      username,
+      content
+    })
+    setUsername('')
+    setContent('')
+    fetchMessages()
+  }
 
   return (
-    <main style={{ maxWidth: 800, margin: "3rem auto", padding: "0 20px" }}>
-      <h1>📝 简易留言板</h1>
-      <div style={{margin:"20px 0"}}>
+    <main className="p-8 max-w-2xl mx-auto">
+      <h1 className="text-3xl font-bold text-center mb-6">简易留言板（Next.js + Supabase）</h1>
+      <form onSubmit={handleSubmit} className="flex gap-3 mb-8">
         <input
-          placeholder="你的名字"
-          value={name}
-          onChange={e=>setName(e.target.value)}
-          style={{padding:8, width:200, marginRight:10}}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="用户名"
+          className="border p-2 flex-1"
         />
-        <br/><br/>
-        <textarea
-          placeholder="写留言..."
+        <input
           value={content}
-          onChange={e=>setContent(e.target.value)}
-          style={{width:"100%", height:100, padding:8}}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="写下留言"
+          className="border p-2 flex-1"
         />
-        <br/>
-        <button onClick={submit} style={{padding:"8px 16px", marginTop:10}}>提交留言</button>
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2">提交留言</button>
+      </form>
+
+      <div className="space-y-4">
+        {messages.map((msg) => (
+          <div key={msg.id} className="border p-4 rounded">
+            <div className="font-bold">{msg.username}</div>
+            <div>{msg.content}</div>
+            <div className="text-sm text-gray-500 mt-1">{msg.created_at}</div>
+          </div>
+        ))}
       </div>
-      <hr/>
-      <h2>留言列表</h2>
-      {messages.map(m=>(
-        <div key={m.id} style={{border:"1px solid #ccc", padding:12, margin:"8px 0"}}>
-          <b>{m.name}</b> <small>{m.created_at}</small>
-          <p>{m.content}</p>
-        </div>
-      ))}
     </main>
   )
 }

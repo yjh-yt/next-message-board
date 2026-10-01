@@ -1,33 +1,7 @@
-version: '3.8'
-
 services:
-  # MySQL数据库服务
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: message_db
-    volumes:
-      - mysql_data:/var/lib/mysql # 持久化数据库数据
-    ports:
-      - "3307:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot123456"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # Next.js服务
   web:
     build: .
-    restart: always
     ports:
       - "3000:3000"
-    env_file: .env
-    depends_on:
-      db:
-        condition: service_healthy
-
-volumes:
-  mysql_data:
+    env_file:
+      - .env
